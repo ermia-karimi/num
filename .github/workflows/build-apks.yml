@@ -1,5 +1,5 @@
 
-name: Build Numix APKs
+name: Build Numix Release
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.edition }} APK
+    name: Build ${{ matrix.edition }} Release
     runs-on: ubuntu-24.04
 
     strategy:
@@ -23,9 +23,11 @@ jobs:
       matrix:
         include:
           - edition: persian
-            artifact: Numix-Persian-APK
+            apk_artifact: Numix-Persian-Release-APK
+            aab_artifact: Numix-Persian-Release-AAB
           - edition: international
-            artifact: Numix-International-APK
+            apk_artifact: Numix-International-Release-APK
+            aab_artifact: Numix-International-Release-AAB
 
     defaults:
       run:
@@ -49,15 +51,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-           packages: |
-              platform-tools
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
+          packages: |
+            platform-tools
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install dependencies
         run: npm install
@@ -69,17 +68,81 @@ jobs:
         run: |
           npx --yes @capacitor/assets@4 generate --android --assetPath ./www/resources --iconBackgroundColor '#101A4C' --splashBackgroundColor '#101A4C'
 
-      - name: Copy web assets to Android
+      - name: Copy web assets
         run: npx cap sync android
 
-      - name: Build debug APK
-        working-directory: ${{ matrix.edition }}/android
-        run: ./gradlew assembleDebug
+      - name: Prepare Release Keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.Secret1 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/numix-release.jks
+          test -s android/app/numix-release.jks
 
-      - name: Upload APK
+      - name: Configure Android Release Signing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/app/build.gradle")
+          content = path.read_text()
+
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file("numix-release.jks")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+
+          """
+
+          if "signingConfigs {" not in content:
+              if "    buildTypes {" not in content:
+                  raise SystemExit("Could not find buildTypes in build.gradle")
+              content = content.replace(
+                  "    buildTypes {",
+                  signing + "    buildTypes {",
+                  1
+              )
+
+          release_marker = "        release {"
+          if release_marker not in content:
+              raise SystemExit("Could not find release build type")
+
+          if "signingConfig signingConfigs.release" not in content:
+              content = content.replace(
+                  release_marker,
+                  release_marker + "\n            signingConfig signingConfigs.release",
+                  1
+              )
+
+          path.write_text(content)
+          print("Release signing configured successfully.")
+          PY
+
+      - name: Build Signed Release APK and AAB
+        working-directory: ${{ matrix.edition }}/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.Secret2 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.Secret3 }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.Secret4 }}
+        run: |
+          ./gradlew assembleRelease bundleRelease
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.edition }}/android/app/build/outputs/apk/debug/app-debug.apk
+          name: ${{ matrix.apk_artifact }}
+          path: ${{ matrix.edition }}/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.aab_artifact }}
+          path: ${{ matrix.edition }}/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30

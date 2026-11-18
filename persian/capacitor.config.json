@@ -1,0 +1,9 @@
+{
+  "appId": "com.infinitycode.numix.fa",
+  "appName": "Numix Persian",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}

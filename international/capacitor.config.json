@@ -1,0 +1,9 @@
+{
+  "appId": "com.infinitycode.numix",
+  "appName": "Numix",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}

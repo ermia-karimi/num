@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#090d1a">
+    <meta name="description" content="نامیکس؛ یک بازی فکری و چالش‌برانگیز با اعداد.">
+    <title>نامیکس — فکر کن، حرکت بده، برنده شو</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="./lib.js" defer></script>
+    <script src="./hammer.min.js" defer></script>
+    <script src="./NPuzzleSolver.js" defer></script>
+    <script src="./Game.js" defer></script>
+    <script src="./Cell.js" defer></script>
+    <script src="./index.js" defer></script>
+</head>
+<body>
+    <main class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="#" aria-label="صفحه اصلی نامیکس">
+                <span class="brand-mark">N</span>
+                <span class="brand-word">numix<span class="brand-dot">.</span></span>
+            </a>
+            <button class="contact-trigger" id="contact-trigger" type="button">
+                <span class="contact-icon">↗</span>
+                <span>رزرو تبلیغات</span>
+            </button>
+        </header>
+
+        <section class="hero controls__main" aria-labelledby="hero-title">
+            <div class="hero-copy">
+                <div class="eyebrow"><span class="eyebrow-dot"></span> بازی پازل اعداد</div>
+                <h1 id="hero-title">اول فکر کن.<br><span>بعد حرکت کن.</span></h1>
+                <p class="hero-description">خانه‌ها را جابه‌جا کن و ترتیب درست را پیدا کن.<br>با هر حرکت، ذهنت را به چالش بکش.</p>
+                <div class="hero-pills">
+                    <span class="hero-pill">✦ ۸ مرحله چالش‌برانگیز</span>
+                    <span class="hero-pill">◷ با سرعت خودت بازی کن</span>
+                </div>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+                <div class="mini-board">
+                    <span>1</span><span>2</span><span>3</span><span>4</span>
+                    <span>5</span><span>6</span><span>7</span><span>8</span>
+                    <span>9</span><span>10</span><span>11</span><span>12</span>
+                    <span>13</span><span>14</span><span class="mini-empty"></span><span>15</span>
+                </div>
+                <span class="spark spark-a">✦</span><span class="spark spark-b">✧</span>
+            </div>
+        </section>
+
+        <!-- Ad placement 1: directly below the hero slogan. Hidden when no active ad exists. -->
+        <section class="numix-ad-slot numix-ad-slot--hero" id="numix-ad-slot-1" data-numix-ad="1" aria-label="محتوای تبلیغاتی" hidden></section>
+
+        <section class="game-topline controls__game none" aria-label="کنترل‌های بازی">
+            <button id="level" class="back-button" type="button"><span>←</span> همه مراحل</button>
+            <div class="game-stats hidden">
+                <div class="stat-chip">
+                    <span class="stat-label">حرکت‌ها</span>
+                    <strong class="game-stats__moves--value">0</strong>
+                </div>
+                <div class="stat-chip stat-chip--time">
+                    <span class="stat-label">زمان</span>
+                    <strong class="game-stats__time--value" id="game-timer">00:00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="progress-panel" id="progress-panel" aria-label="پیشرفت بازیکن">
+            <div class="progress-main">
+                <div class="progress-avatar">N</div>
+                <div class="progress-copy">
+                    <span class="progress-kicker">مسیر پیشرفت شما</span>
+                    <strong class="progress-level" id="player-level">مرحله ۱</strong>
+                    <span class="progress-xp" id="player-xp">۰ / ۱۰۰ امتیاز</span>
+                </div>
+                <div class="progress-total"><strong id="total-xp">0</strong><span>مجموع امتیاز</span></div>
+            </div>
+            <div class="xp-track"><span id="xp-fill"></span></div>
+            <div class="achievement-heading">
+                <strong>دستاوردها</strong>
+                <span id="achievement-count">۰ از ۶ باز شده</span>
+            </div>
+            <div class="achievement-list" id="achievement-list"></div>
+        </section>
+
+        <section class="daily-card" id="daily-card" aria-label="چالش روزانه">
+            <div class="daily-card-art" aria-hidden="true"><span>✦</span><span>24H</span></div>
+            <div class="daily-card-content">
+                <div class="daily-kicker"><span class="daily-live-dot"></span> چالش روزانه</div>
+                <h2>هر روز، <span>یک چالش تازه.</span></h2>
+                <p id="daily-description">هر روز یک پازل ۴×۴ جدید برای همه بازیکنان. می‌توانی حلش کنی؟</p>
+                <div class="daily-meta">
+                    <span id="daily-date">امروز</span>
+                    <span id="daily-status">انجام نشده</span>
+                    <span id="daily-streak">🔥 ۰ روز پیاپی</span>
+                </div>
+            </div>
+            <button class="daily-play-button" id="daily-play-button" type="button">شروع چالش امروز <span>↗</span></button>
+        </section>
+
+        <section class="section-heading" id="level-heading">
+            <div>
+                <div class="eyebrow">مرحله موردنظرت را انتخاب کن</div>
+                <h2>حرکت <span>بعدی تو.</span></h2>
+            </div>
+            <div class="section-note">از ساده شروع کن، بزرگ فکر کن.</div>
+        </section>
+
+        <div class="board board--levels" style="background: transparent;"></div>
+
+        <!-- Ad placement 2: below the challenge list and above the footer. -->
+        <section class="numix-ad-slot numix-ad-slot--footer" id="numix-ad-slot-2" data-numix-ad="2" aria-label="محتوای تبلیغاتی" hidden></section>
+
+        <footer class="footer">
+            <span>نامیکس <span class="footer-separator">•</span> فکر کن، حرکت بده، برنده شو</span>
+            <span>ساخته‌شده برای ذهن‌های کنجکاو.</span>
+        </footer>
+    </main>
+
+    <div class="contact-modal" id="contact-modal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-contact></div>
+        <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+            <button class="modal-close" type="button" data-close-contact aria-label="بستن">×</button>
+            <div class="modal-icon">↗</div>
+            <div class="eyebrow">همکاری با نامیکس</div>
+            <h2 id="contact-title">برای رزرو<br><span>جایگاه تبلیغاتی</span></h2>
+            <p>برای رزرو جایگاه تبلیغاتی با شماره زیر تماس بگیرید.</p>
+            <div class="contact-number" id="contact-number">۰۹۱۱۲۶۵۲۸۰۳</div>
+            <a class="call-button" id="call-button" href="tel:09112652803">تماس بگیرید <span>↗</span></a>
+            <span class="modal-footnote">درخواست تبلیغات · نامیکس</span>
+        </section>
+    </div>
+</body>
+</html>

@@ -78,6 +78,7 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/numix-release.jks
           test -s android/app/numix-release.jks
 
+      
       - name: Configure Android Release Signing
         run: |
           python3 - <<'PY'
@@ -98,29 +99,47 @@ jobs:
 
           """
 
+          # Add signingConfigs before buildTypes, only once.
           if "signingConfigs {" not in content:
-              if "    buildTypes {" not in content:
-                  raise SystemExit("Could not find buildTypes in build.gradle")
-              content = content.replace(
-                  "    buildTypes {",
-                  signing + "    buildTypes {",
-                  1
-              )
+              marker = "    buildTypes {"
+              if marker not in content:
+                  raise SystemExit("Could not find buildTypes block")
 
-          release_marker = "        release {"
-          if release_marker not in content:
-              raise SystemExit("Could not find release build type")
+              content = content.replace(marker, signing + marker, 1)
 
-          if "signingConfig signingConfigs.release" not in content:
-              content = content.replace(
-                  release_marker,
-                  release_marker + "\n            signingConfig signingConfigs.release",
-                  1
-              )
+          # Find release block specifically inside buildTypes.
+          build_types_index = content.find("    buildTypes {")
+          release_index = content.find("        release {", build_types_index)
+
+          if build_types_index == -1 or release_index == -1:
+              raise SystemExit("Could not find buildTypes > release block")
+
+          # Remove any misplaced signingConfig line before inserting it correctly.
+          lines = content.splitlines()
+          lines = [
+              line for line in lines
+              if "signingConfig signingConfigs.release" not in line
+          ]
+          content = "\n".join(lines) + "\n"
+
+          build_types_index = content.find("    buildTypes {")
+          release_index = content.find("        release {", build_types_index)
+
+          if release_index == -1:
+              raise SystemExit("Could not find release block inside buildTypes")
+
+          insertion_point = content.find("\n", release_index) + 1
+
+          content = (
+              content[:insertion_point]
+              + "            signingConfig signingConfigs.release\n"
+              + content[insertion_point:]
+          )
 
           path.write_text(content)
-          print("Release signing configured successfully.")
+          print("Release signing configured in the correct location.")
           PY
+
 
       - name: Build Signed Release APK and AAB
         working-directory: ${{ matrix.edition }}/android

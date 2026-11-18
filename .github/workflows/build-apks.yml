@@ -65,6 +65,10 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Generate Numix App Icons
+        run: |
+          npx --yes @capacitor/assets@4 generate --android --assetPath resources --iconBackgroundColor '#101A4C' --splashBackgroundColor '#101A4C'
+
       - name: Copy web assets to Android
         run: npx cap sync android
 
